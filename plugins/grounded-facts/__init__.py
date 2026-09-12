@@ -88,23 +88,23 @@ def _ground(user_message, **kwargs):
         selected = payload.get("selected") or {}
         evidence = payload.get("article_text", "")
         context = (
-            "[PREUVE KIWIX INJECTÉE AUTOMATIQUEMENT — ne relance pas Kiwix]\n"
+            "[KIWIX EVIDENCE INJECTED AUTOMATICALLY — do not call Kiwix again]\n"
             f"Sujet recherché : {payload.get('search_query') or payload.get('query')}\n"
             f"Article : {selected.get('title', '')}\n"
             f"URL locale : {selected.get('url', '')}\n"
             f"Texte extrait :\n{evidence}\n\n"
-            "RÈGLES POUR CETTE RÉPONSE : utilise uniquement ce texte pour les faits stables. "
-            "N'ajoute aucun nom, chiffre, événement ou détail absent. Pour un produit, un prix, "
-            "une version ou une information actuelle, ouvre en plus la page officielle du fabricant ; "
-            "un résultat de moteur de recherche non ouvert n'est pas une source. Cite les sources réellement lues."
+            "RULES FOR THIS ANSWER: use this text only for stable facts. Do not add any name, "
+            "number, event, or detail that is absent. If the requested information is missing, "
+            "Kiwix is unavailable, or the topic is current, use the Internet and open a primary "
+            "official source. A search-result snippet is not a source. Cite only sources actually read."
         )
     else:
         context = (
-            "[ÉCHEC KIWIX INJECTÉ AUTOMATIQUEMENT — ne relance pas Kiwix]\n"
-            f"Statut : {status}. Détail : {payload.get('detail', '')}\n"
-            "Avant toute réponse factuelle, ouvre une source web primaire ou institutionnelle. "
-            "Les extraits d'une page de résultats ne suffisent pas. Si aucune source n'est accessible, "
-            "dis que le point n'est pas vérifié et ne complète pas depuis tes connaissances internes."
+            "[KIWIX FAILURE INJECTED AUTOMATICALLY — do not call Kiwix again]\n"
+            f"Status: {status}. Detail: {payload.get('detail', '')}\n"
+            "Before any factual answer, use the Internet and open a primary or institutional source. "
+            "Search-result snippets are not sufficient. If no source is accessible, say that the "
+            "point is unverified and do not fill the gap from internal knowledge."
         )
     return {"context": context}
 

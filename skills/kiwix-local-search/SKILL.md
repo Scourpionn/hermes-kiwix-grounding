@@ -1,51 +1,56 @@
----
-name: kiwix-local-search
-description: Mandatory first source for every external factual question, including who, creator, founder, date, place, history, person, organization, product, software, science, culture, or technical specification. Invoke automatically even when the user does not mention Kiwix.
----
-
 # Kiwix local search
 
-Use Kiwix first for stable, checkable knowledge. The helper searches, selects the best result, opens it, and extracts clean text in one call.
+Use this skill to ground factual answers in a local Kiwix Server before using the public Internet.
 
-## Fast path — mandatory
+## Purpose
 
-For an ordinary factual question, run exactly one command:
+Kiwix serves downloadable ZIM archives (for example, an offline Wikipedia snapshot) over a local HTTP server. It is useful when Internet access is unavailable, unreliable, expensive, or deliberately kept out of the first research step.
+
+For an external factual question, run the helper once before answering when a local Kiwix source is relevant. Do not make this dependent on the model selecting a tool.
+
+## Required lookup
+
+Run exactly one helper command with the absolute installed path:
 
 ```bash
-python /opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py "canonical subject"
+python3 /opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py "<short canonical subject>"
 ```
 
-Pass the shortest canonical subject, not the whole question:
+Examples:
 
-- "Qui a fondé OpenAI ?" -> `OpenAI`
-- "Qui est Victor Hugo ?" -> `Victor Hugo`
-- "Que s'est-il passé à Waterloo ?" -> `Bataille de Waterloo`
+```bash
+python3 /opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py "Victor Hugo"
+python3 /opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py "Paris Eiffel Tower"
+python3 /opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py "Nepal landslide"
+```
 
-The helper also removes common French and English question words and request scaffolding automatically. Therefore, if the model accidentally passes `who created ChatGPT` or `fais une recherche sur Adidas`, the helper searches for the meaningful subject without requiring a second command.
+The helper removes surrounding prompt scaffolding, normalizes whitespace, and performs at most one conservative fuzzy correction. It also handles common French Wikipedia aliases. Do not inspect the helper source or parse Kiwix with `grep`, `curl`, a browser, or another intermediate workflow. Do not issue multiple phrasings if the first call returns a usable result.
 
-If the exact subject has no relevant result, the helper makes one conservative prefix lookup for minor spelling errors. It accepts a corrected title only when that title is a very close textual match, and reports the change in the `correction` field. Never invent or silently broaden another correction in prose.
+## Interpreting the result
 
-The helper also resolves known French Wikipedia title aliases. For example, `Napoleon`, `Napoléon Bonaparte`, and `Bonaparte` are searched as `Napoléon Ier`. Never work around a mismatched result with several manual queries; inspect the single returned status and use the prescribed fallback.
+- `status: ok`: use only the returned `article_text` for stable factual claims. Cite the selected local title and URL as the local source.
+- `status: no_match`, `article_empty`, `article_error`, or `unreachable`: explain that the local source did not provide usable evidence, then use the Internet and open a current, primary or institutional source. Do not treat search snippets as evidence.
+- If the result is clearly unrelated, make at most one second call with a shorter canonical subject. If it is still unrelated, move to the Internet fallback.
 
-Do not inspect the helper source. Do not use `grep`, inline Python, `curl`, or a browser to parse Kiwix. Do not try several phrasings while `status` is `ok`; `article_text` is the evidence.
+For changing information (news, prices, software versions, availability, laws, regulations, or current office holders), use Kiwix first when it can provide useful background, then verify the current state on the Internet with an authoritative source.
 
-## Result
+For a follow-up question about the same subject, reuse the existing `article_text` instead of running Kiwix again unless the user asks for a different subject.
 
-- `status: ok`: answer only from `article_text`; always end with `Source locale : selected.title — selected.url`.
-- `status: no_match`, `article_empty`, `article_error`, or `unreachable`: use a current authoritative web source when allowed.
-- If the selected title is visibly unrelated, make at most one new call with a clearer canonical title, then use the fallback.
-
-Never fill missing facts from model memory. For changing facts, products, software, prices, availability, laws, or current office holders, use Kiwix first when useful and then verify with an up-to-date primary source.
-
-For a follow-up such as "dis-m'en plus", reuse the retrieved `article_text`. Do not add names, numbers, dates, offers, valuations, records, or technical details absent from that text. If the existing extract cannot support the requested detail, run this same absolute command once for the canonical subject or use the authoritative web fallback.
-
-Greetings, thanks, rewriting, calculations, and analysis of user-provided files do not need Kiwix.
+Greetings, casual conversation, creative writing, and purely local code questions do not require a Kiwix lookup.
 
 ## Configuration
 
-```text
-KIWIX_URL=http://localhost:8091
-KIWIX_LANG=fra
-KIWIX_LIMIT=6
-KIWIX_MAX_CHARS=4500
-```
+The helper reads these environment variables:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `KIWIX_URL` | `http://localhost:8091` | Kiwix Server base URL |
+| `KIWIX_LANG` | `fra` | Preferred language/alias |
+| `KIWIX_LIMIT` | `6` | Maximum search results |
+| `KIWIX_MAX_CHARS` | `4500` | Maximum returned article characters |
+
+Set `KIWIX_URL` to the address reachable from the Hermes runtime. For a NAS, use its LAN or overlay-network address instead of `localhost`.
+
+## Source and fallback policy
+
+Kiwix is a local evidence source, not a guarantee that every question is covered. If the requested fact is absent or potentially outdated, always continue with an Internet lookup. The final answer should distinguish local Kiwix evidence, current web verification, and anything that remains unverified.

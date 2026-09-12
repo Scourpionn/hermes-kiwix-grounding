@@ -1,14 +1,27 @@
-# grounded-facts pour Hermes Agent v0.21
+# grounded-facts for Hermes Agent v0.21+
 
-Ce plugin exécute automatiquement le helper Kiwix avant les questions factuelles et injecte son résultat via `pre_llm_call`. L'appel ne dépend donc plus de la décision du modèle.
+This plugin automatically runs the Kiwix helper before factual questions and injects the result through `pre_llm_call`. Grounding therefore does not depend on the model choosing a tool by itself.
 
-## Installation dans le conteneur
+## What is Kiwix?
 
-Copier ce dossier vers :
+[Kiwix](https://kiwix.org/en/) is a nonprofit, open-source project that makes knowledge available offline. A [Kiwix Server](https://get.kiwix.org/en/solutions/applications/kiwix-server/) shares downloaded ZIM archives—such as an offline Wikipedia snapshot—over a local network without requiring live Internet access.
+
+This is useful for:
+
+- research on a NAS or local network;
+- unreliable, restricted, or expensive Internet connections;
+- classrooms, field work, travel, and emergency/offline situations;
+- a fast, reproducible baseline before checking current web sources.
+
+Browse the [Kiwix content catalog](https://get.kiwix.org/en/solutions/catalog/) and [download options](https://get.kiwix.org/en/solutions/applications/download-options/) to install a server or reader and obtain ZIM files.
+
+## Installation in the Hermes runtime
+
+Copy this directory to:
 
 `/opt/data/profiles/default/plugins/grounded-facts`
 
-Puis lancer :
+Then run:
 
 ```bash
 PLUGIN_DIR="/opt/data/profiles/default/plugins/grounded-facts"
@@ -19,13 +32,16 @@ hermes plugins doctor
 hermes gateway restart
 ```
 
-Commencer ensuite une nouvelle conversation et poser une question factuelle sans mentionner Kiwix.
+Start a new conversation and ask a factual question without mentioning Kiwix. The plugin performs the local lookup automatically.
 
-## Variables facultatives
+## Internet fallback
 
-`KIWIX_HELPER` peut remplacer le chemin du helper. Le chemin par défaut est :
+If Kiwix has no matching article, returns an empty or error result, or cannot be reached, the injected guidance tells Hermes to use the Internet and open a current primary or institutional source. Search-result snippets alone are not accepted as evidence. For changing facts, Kiwix provides background and the Internet is used for current verification.
+
+## Optional variables
+
+`KIWIX_HELPER` overrides the helper path. The default is:
 
 `/opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py`
 
-Définir `KIWIX_URL` vers votre instance Kiwix, par exemple
-`http://localhost:8091`. Aucune clé ni donnée privée n’est requise.
+`KIWIX_URL` points to your Kiwix instance, for example `http://localhost:8091` or a NAS address reachable from Hermes. No API key or private data is required.
