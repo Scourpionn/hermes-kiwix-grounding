@@ -1,0 +1,5 @@
+name: grounded-facts
+version: "1.0.1"
+description: Inject local Kiwix evidence before factual turns so grounding does not depend on model tool choice.
+provides_hooks:
+  - pre_llm_call
