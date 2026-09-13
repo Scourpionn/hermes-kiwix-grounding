@@ -1,7 +1,7 @@
 <div align="center">
   <a href="https://kiwix.org/"><img src="https://raw.githubusercontent.com/kiwix/kiwix-android/main/Kiwix_icon_transparent_512x512.png" width="92" alt="Kiwix logo" /></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="assets/hermes.svg" width="92" alt="Hermes logo" />
+  <a href="https://github.com/NousResearch/hermes-agent"><img src="https://raw.githubusercontent.com/NousResearch/hermes-agent/main/assets/banner.png" width="320" alt="Official Hermes Agent logo" /></a>
 
   # Hermes × Kiwix Grounding
 
