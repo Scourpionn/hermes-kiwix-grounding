@@ -46,4 +46,6 @@ If Kiwix has no matching article, returns an empty or error result, or cannot be
 
 `/opt/data/profiles/default/skills/research/kiwix-local-search/scripts/search_kiwix.py`
 
+Replace `default` with the target profile name when using a custom Hermes profile.
+
 `KIWIX_URL` points to your Kiwix instance, for example `http://localhost:8091` or a NAS address reachable from Hermes. No API key or private data is required.

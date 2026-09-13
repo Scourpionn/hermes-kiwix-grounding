@@ -82,6 +82,8 @@ hermes plugins doctor
 
 When Kiwix runs on a NAS or another machine, use its LAN or overlay-network address—not `localhost`.
 
+If you use a custom Hermes profile, replace `default` with that profile name.
+
 Detailed references: [skill instructions](skills/kiwix-local-search/SKILL.md) · [plugin instructions](plugins/grounded-facts/README.md) · [Kiwix content catalog](https://get.kiwix.org/en/solutions/catalog/)
 
 ## Validate
