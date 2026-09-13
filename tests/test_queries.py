@@ -2,7 +2,10 @@ import importlib.util
 from pathlib import Path
 import unittest
 
-spec = importlib.util.spec_from_file_location('helper', Path(__file__).parent / 'scripts/search_kiwix.py')
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+HELPER_PATH = PROJECT_ROOT / 'skills' / 'kiwix-local-search' / 'scripts' / 'search_kiwix.py'
+
+spec = importlib.util.spec_from_file_location('helper', HELPER_PATH)
 helper = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(helper)
 
