@@ -1,6 +1,6 @@
 # grounded-facts for Hermes Agent v0.21+
 
-This plugin automatically runs the Kiwix helper before factual questions and injects the result through `pre_llm_call`. Grounding therefore does not depend on the model choosing a tool by itself.
+This plugin automatically runs the Kiwix helper before factual questions and injects the result through `pre_llm_call`. It then uses `transform_llm_output` to append a deterministic provenance block containing the local source and proof of injection. Grounding and citation therefore do not depend on the model choosing a tool or remembering to cite it.
 
 ## What is Kiwix?
 
@@ -33,6 +33,8 @@ hermes gateway restart
 ```
 
 Start a new conversation and ask a factual question without mentioning Kiwix. The plugin performs the local lookup automatically.
+
+For a successful lookup, every final answer receives a `Provenance` section with the Kiwix article title, its local URL, the exact lookup query, and `status=ok`. If Kiwix was queried but no article could be injected, the section reports that failure explicitly instead of claiming a local source was used.
 
 ## Internet fallback
 

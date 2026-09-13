@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -35,6 +36,62 @@ FACTUAL = re.compile(
     re.IGNORECASE,
 )
 
+_PROVENANCE_LOCK = threading.Lock()
+_PROVENANCE_BY_SESSION = {}
+
+
+def _store_provenance(session_id: str, payload) -> None:
+    """Keep this turn's Kiwix result until Hermes finalizes its response."""
+    key = str(session_id or "")
+    with _PROVENANCE_LOCK:
+        if payload is None:
+            _PROVENANCE_BY_SESSION.pop(key, None)
+        else:
+            _PROVENANCE_BY_SESSION[key] = payload
+
+
+def _take_provenance(session_id: str):
+    """Consume provenance once so it can never leak into a later turn."""
+    with _PROVENANCE_LOCK:
+        return _PROVENANCE_BY_SESSION.pop(str(session_id or ""), None)
+
+
+def _markdown_text(value) -> str:
+    return str(value or "").replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+
+
+def _append_provenance(response_text, session_id="", **kwargs):
+    """Deterministically append the Kiwix source after model generation."""
+    del kwargs
+    provenance = _take_provenance(session_id)
+    if not provenance:
+        return None
+
+    status = str(provenance.get("status") or "invalid")
+    query = _markdown_text(provenance.get("query"))
+    if status == "ok":
+        title = _markdown_text(provenance.get("title") or "Article Kiwix")
+        url = str(provenance.get("url") or "").strip().replace(">", "%3E")
+        source = f"[{title}](<{url}>)" if url else title
+        footer = (
+            "### Provenance\n\n"
+            f"- **Source Kiwix :** {source}\n"
+            f"- **Preuve d’utilisation :** ✅ `grounded-facts` a injecté automatiquement "
+            f"cet article Kiwix dans ce tour (`status=ok`, requête : `{query}`)."
+        )
+    else:
+        detail = _markdown_text(provenance.get("detail"))
+        footer = (
+            "### Provenance\n\n"
+            f"- **Vérification Kiwix :** ⚠️ `grounded-facts` a exécuté la recherche locale "
+            f"(`status={_markdown_text(status)}`, requête : `{query}`), mais aucune source Kiwix "
+            "n’a été injectée."
+        )
+        if detail:
+            footer += f"\n- **Détail :** {detail}"
+
+    return f"{str(response_text or '').rstrip()}\n\n---\n\n{footer}"
+
 
 def _message_text(value) -> str:
     if isinstance(value, str):
@@ -57,7 +114,8 @@ def _needs_grounding(message: str) -> bool:
 
 
 def _ground(user_message, **kwargs):
-    del kwargs
+    session_id = str(kwargs.get("session_id") or "")
+    _store_provenance(session_id, None)
     message = _message_text(user_message)
     if not _needs_grounding(message):
         return None
@@ -84,8 +142,18 @@ def _ground(user_message, **kwargs):
         file=sys.stderr,
         flush=True,
     )
+    selected = payload.get("selected") or {}
+    _store_provenance(
+        session_id,
+        {
+            "status": status,
+            "query": payload.get("search_query") or payload.get("query") or message,
+            "title": selected.get("title", ""),
+            "url": selected.get("url", ""),
+            "detail": payload.get("detail", ""),
+        },
+    )
     if status == "ok":
-        selected = payload.get("selected") or {}
         evidence = payload.get("article_text", "")
         context = (
             "[KIWIX EVIDENCE INJECTED AUTOMATICALLY — do not call Kiwix again]\n"
@@ -111,4 +179,9 @@ def _ground(user_message, **kwargs):
 
 def register(ctx):
     ctx.register_hook("pre_llm_call", _ground)
-    print("[grounded-facts] registered pre_llm_call", file=sys.stderr, flush=True)
+    ctx.register_hook("transform_llm_output", _append_provenance)
+    print(
+        "[grounded-facts] registered pre_llm_call + transform_llm_output",
+        file=sys.stderr,
+        flush=True,
+    )

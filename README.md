@@ -44,7 +44,8 @@ Kiwix local search ── usable evidence ──► Inject stable facts into Her
 2. It selects a relevant local article and returns clean, structured evidence.
 3. The `grounded-facts` plugin injects that evidence through `pre_llm_call`; the model does not need to choose a tool.
 4. Missing, unavailable, or potentially outdated evidence triggers a web-verification route.
-5. The final answer clearly separates local Kiwix evidence, current web verification, and anything unverified.
+5. A deterministic `transform_llm_output` hook appends the Kiwix source and proof of injection to every grounded answer.
+6. The final answer clearly separates local Kiwix evidence, current web verification, and anything unverified.
 
 ## Included
 
